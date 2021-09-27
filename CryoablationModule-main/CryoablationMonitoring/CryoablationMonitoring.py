@@ -25,7 +25,6 @@ from monai.config import print_config
 from monai.apps import download_and_extract
 
 import torch
-import matplotlib.pyplot as plt
 import tempfile
 import shutil
 import os
@@ -350,10 +349,10 @@ class CryoablationMonitoringLogic(ScriptedLoadableModuleLogic):
 
     val_transforms =  loadInferenceTransforms(param)
 
-    val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=4)
+    val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=0)
     #val_ds = Dataset(data=val_files, transform=val_transforms)
 
-    val_loader = DataLoader(val_ds, batch_size=1, num_workers=4)
+    val_loader = DataLoader(val_ds, batch_size=1, num_workers=0)
  
     
     #--------------------------------------------------------------------------------
