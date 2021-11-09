@@ -129,10 +129,10 @@ def loadInferenceTransforms(param):
         [
             LoadImaged(keys=["image"]),
             AddChanneld(keys=["image"]),
-            Spacingd(keys=["image"], pixdim=param.pixel_dim, mode=("bilinear")),
+            Spacingd(keys=["image"], pixdim=param['pixel_dim'], mode=("bilinear")),
             Orientationd(keys=["image"], axcodes="LPS"),
             ScaleIntensityRanged(
-                keys=["image"], a_min=param.pixel_intensity_min, a_max=param.pixel_intensity_max,
+                keys=["image"], a_min=param['pixel_intensity_min'], a_max=param['pixel_intensity_max'],
                 b_min=0.0, b_max=1.0, clip=True,
             ),
             # ScaleIntensityRangePercentilesd(

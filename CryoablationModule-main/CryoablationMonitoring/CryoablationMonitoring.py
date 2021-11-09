@@ -164,8 +164,8 @@ class CryoablationMonitoringWidget(ScriptedLoadableModuleWidget, VTKObservationM
     # (in the selected parameter node).
     self.ui.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
-    self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    #self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
+    #self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
     self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
@@ -259,8 +259,8 @@ class CryoablationMonitoringWidget(ScriptedLoadableModuleWidget, VTKObservationM
     # Update node selectors and sliders
     self.ui.inputSelector.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume"))
     self.ui.outputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolume"))
-    self.ui.invertedOutputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolumeInverse"))
-    self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
+    #self.ui.invertedOutputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolumeInverse"))
+    #self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
 
     # Update buttons states and tooltips
     if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
@@ -286,8 +286,8 @@ class CryoablationMonitoringWidget(ScriptedLoadableModuleWidget, VTKObservationM
 
     self._parameterNode.SetNodeReferenceID("InputVolume", self.ui.inputSelector.currentNodeID)
     self._parameterNode.SetNodeReferenceID("OutputVolume", self.ui.outputSelector.currentNodeID)
-    self._parameterNode.SetParameter("Invert", "true" if self.ui.invertOutputCheckBox.checked else "false")
-    self._parameterNode.SetNodeReferenceID("OutputVolumeInverse", self.ui.invertedOutputSelector.currentNodeID)
+    #self._parameterNode.SetParameter("Invert", "true" if self.ui.invertOutputCheckBox.checked else "false")
+    #self._parameterNode.SetNodeReferenceID("OutputVolumeInverse", self.ui.invertedOutputSelector.currentNodeID)
 
     self._parameterNode.EndModify(wasModified)
 
@@ -295,24 +295,47 @@ class CryoablationMonitoringWidget(ScriptedLoadableModuleWidget, VTKObservationM
     """
     Run processing when user clicks "Apply" button.
     """
-    config_file = self.ui.configPathEdit.text
-    input_path = self.ui.inputPathEdit.text
-    output_path = self.ui.outputPathEdit.text
+    #config_file = self.ui.configPathEdit.text
+    #input_path = self.ui.inputPathEdit.text
+    #output_path = self.ui.outputPathEdit.text
 
-    print('Config file = ' + config_file)
-    print('input_path = ' + input_path)
-    print('output_path = ' + output_path)
+    #print('config file = ' + config_file)
+    #print('input_path = ' + input_path)
+    #print('output_path = ' + output_path)
     # Make the destination directory, if it does not exists.
-    os.makedirs(output_path, exist_ok=True)
+    #os.makedirs(output_path, exist_ok=True)
 
-    print('Loading parameters from: ' + config_file)
-    param = InferenceParam(config_file)
-    files = generateFileList(input_path)
-    n_files = len(files)
-    print('# of images: ' + str(n_files))
-    print('model file = ' + param.model_file)
+    #print('Loading parameters from: ' + config_file)
+    #param = InferenceParam(config_file)
 
-    self.logic.runSegmentation(param, output_path, files)
+    #self.data_dir = self.config.get('common', 'data_dir')
+    #self.root_dir = self.config.get('common', 'root_dir')
+
+    param = {}
+    param['pixel_dim'] = (0.9375, 0.9375, 3.6)
+    param['window_size'] = (160,160,16)
+    param['pixel_intensity_min'] = 0.0
+    param['pixel_intensity_max'] = 250.0
+    param['pixel_intensity_percentile_min'] = 0.0
+    param['pixel_intensity_percentile_max'] = 25.0
+    param['model_file'] = "/Users/smithagubbi/Documents/SlicerCryoablation/CryoablationModule-main/CryoablationMonitoring/best_metric_model.pth"
+    param['root_dir'] = '.'
+    param['inference_device_name'] = 'cpu'
+
+    inputVolume = self.ui.inputSelector.currentNode()
+
+    if inputVolume:
+      slicer.util.saveNode(inputVolume, '/Users/smithagubbi/Documents/SegmentationTemp/Input/temp.nii.gz')
+
+      files = generateFileList('/Users/smithagubbi/Documents/SegmentationTemp/Input')
+      output_path='/Users/smithagubbi/Documents/SegmentationTemp/Output'
+      n_files = len(files)
+      print('# of images: ' + str(n_files))
+      #print('model file = ' + param.model_file)
+      self.logic.runSegmentation(param, output_path, files)
+      slicer.util.loadVolume('/Users/smithagubbi/Documents/SegmentationTemp/Output/temp/temp_seg.nii.gz')
+    else:
+      print('No volume is specified.')
 
 #
 # CryoablationMonitoringLogic
@@ -345,7 +368,7 @@ class CryoablationMonitoringLogic(ScriptedLoadableModuleLogic):
 
 
   def runSegmentation(self, param, output_path, val_files):
-    device = torch.device(param.inference_device_name)
+    device = torch.device(param['inference_device_name'])
 
     val_transforms =  loadInferenceTransforms(param)
 
@@ -365,7 +388,7 @@ class CryoablationMonitoringLogic(ScriptedLoadableModuleLogic):
     
     dice_metric = DiceMetric(include_background=False, reduction="mean")
     
-    model.load_state_dict(torch.load(os.path.join(param.root_dir, param.model_file), map_location=device))
+    model.load_state_dict(torch.load(os.path.join(param['root_dir'], param['model_file']), map_location=device))
     
     
     #--------------------------------------------------------------------------------
@@ -382,7 +405,7 @@ class CryoablationMonitoringLogic(ScriptedLoadableModuleLogic):
         metric_count = 0
         
         for i, val_data in enumerate(val_loader):
-            roi_size = param.window_size
+            roi_size = param['window_size']
             sw_batch_size = 4
             
             val_images = val_data["image"].to(device)
